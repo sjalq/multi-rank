@@ -20,6 +20,10 @@ type alias Model =
 
 
 app =
+    let
+        _ =
+            Debug.log "app" "app"
+    in
     Lamdera.frontend
         { init = init
         , onUrlRequest = UrlClicked
@@ -33,6 +37,10 @@ app =
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
+    let
+        _ =
+            Debug.log "init" url
+    in
     ( { key = key
       , message = "Welcome to Lamdera! You're looking at the auto-generated base implementation. Check out src/Frontend.elm to start coding!"
       , newItem = "Eric Voorhees"
@@ -106,9 +114,10 @@ updateFromBackend msg model =
 
 
 view : Model -> Browser.Document FrontendMsg
-view model = 
+view model =
     let
-        _ = Debug.log "" model
+        _ =
+            Debug.log "" model
     in
     { title = ""
     , body =
@@ -116,15 +125,41 @@ view model =
             []
             (drawAddItem model
                 :: (model.rankingLists
-                        |> Dict.keys
-                        |> Debug.log "keys"
-                        |> List.map (\i -> row [] [ Element.text i ])
-                        
+                        |> Dict.map drawRankedList
+                        |> Dict.values
                    )
             )
             |> Element.layout []
         ]
     }
+
+
+drawRankedList : String -> RankedList -> Element FrontendMsg
+drawRankedList listName (RankedList items) =
+    row []
+        [ Element.text listName
+        , column []
+            (List.indexedMap
+                (\index item ->
+                    row []
+                        [ Element.Input.button []
+                            { onPress = DecreaseRanking listName index |> Just
+                            , label = Element.text "-"
+                            }
+                        , Element.text item
+                        , Element.Input.button []
+                            { onPress = IncreaseRanking listName index |> Just
+                            , label = Element.text "+"
+                            }
+                        , Element.Input.button []
+                            { onPress = RemoveItem listName index |> Just
+                            , label = Element.text "x"
+                            }
+                        ]
+                )
+                (items |> Array.toList)
+            )
+        ]
 
 
 drawAddItem model =
