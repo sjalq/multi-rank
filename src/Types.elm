@@ -4,6 +4,7 @@ import Array exposing (Array)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
+import MoreDict exposing (..)
 import Url exposing (Url)
 
 
@@ -88,6 +89,43 @@ addItem item (RankedList ranking) =
         |> RankedList
 
 
+toIndexMapping : RankedList -> Dict String Int
+toIndexMapping (RankedList ranking) =
+    ranking
+        |> Array.indexedMap (\i v -> ( v, i ))
+        |> Array.toList
+        |> Dict.fromList
+
+combineRanks : List RankedList -> Dict String Int
+combineRanks rankedLists =
+    let
+        rankedListsIndexMapped = 
+            List.map toIndexMapping rankedLists
+
+        join left right =
+            MoreDict.fullOuterJoin left right
+                |> Dict.map
+                    (\_ ( l, r ) ->
+                        case ( l, r ) of
+                            ( Just l_, Just r_ ) ->
+                                l_ + r_
+
+                            ( Just l_, Nothing ) ->
+                                l_
+
+                            ( Nothing, Just r_ ) ->
+                                r_
+
+                            ( Nothing, Nothing ) ->
+                                -1
+                    )
+
+        joined = 
+            List.foldl join Dict.empty rankedListsIndexMapped
+    in
+    joined 
+
+
 type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
@@ -95,8 +133,8 @@ type FrontendMsg
       ----
     | IncreaseRanking String Int
     | DecreaseRanking String Int
-    | AddItem String String
-    | RemoveItem String Int
+    | AddItem String
+    | RemoveItem Int
     | EditNewItem String
 
 
